@@ -367,3 +367,115 @@ FROM notifications
 WHERE notificationType = 'Placement'
 AND createdAt >= NOW() - INTERVAL '7 DAYS';
 ```
+
+
+# Stage 4
+
+## Problem
+
+Currently, notifications are fetched from the database every time a student loads the page. With thousands of students accessing the system simultaneously, the database receives a large number of repeated queries, causing increased latency and poor user experience.
+
+## Proposed Solutions
+
+### 1. Redis Caching
+
+Store frequently accessed notifications in Redis.
+
+Flow:
+
+1. User requests notifications.
+2. Application checks Redis cache.
+3. If data exists, return from cache.
+4. If data does not exist, fetch from database and store in Redis.
+
+Benefits:
+
+- Reduces database load.
+- Faster response times.
+- Better scalability.
+
+Tradeoffs:
+
+- Additional infrastructure required.
+- Cache invalidation complexity.
+- Extra memory usage.
+
+---
+
+### 2. Pagination
+
+Instead of loading all notifications, fetch only a limited number at a time.
+
+Example:
+
+```sql
+SELECT *
+FROM notifications
+WHERE student_id = 1042
+ORDER BY created_at DESC
+LIMIT 20 OFFSET 0;
+```
+
+Benefits:
+
+- Smaller result sets.
+- Faster queries.
+- Reduced network usage.
+
+Tradeoffs:
+
+- Additional API requests.
+- Slightly more frontend complexity.
+
+---
+
+### 3. WebSockets
+
+Use WebSockets to push notifications in real time instead of repeatedly fetching data.
+
+Benefits:
+
+- Instant updates.
+- Eliminates constant polling.
+- Better user experience.
+
+Tradeoffs:
+
+- More complex implementation.
+- Requires connection management.
+
+---
+
+### 4. Database Indexing
+
+Create indexes on frequently queried columns.
+
+Example:
+
+```sql
+CREATE INDEX idx_notifications_student_created
+ON notifications(student_id, created_at DESC);
+```
+
+Benefits:
+
+- Faster query execution.
+- Reduced scan time.
+
+Tradeoffs:
+
+- Additional storage usage.
+- Slightly slower inserts and updates.
+
+---
+
+## Recommended Approach
+
+Use:
+
+- Redis Caching
+- Pagination
+- WebSockets
+- Proper Database Indexing
+
+Together these provide the best balance between performance, scalability, and user experience.
