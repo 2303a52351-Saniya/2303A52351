@@ -153,3 +153,143 @@ When a new notification arrives:
 ```
 
 Students receive notifications instantly without refreshing the page.
+
+
+# Stage 2
+
+## Database Choice
+
+I recommend PostgreSQL because:
+
+- Strong ACID compliance
+- Reliable transactions
+- Efficient indexing
+- Supports large datasets
+- Good performance for notification queries
+
+---
+
+## Database Schema
+
+### students
+
+```sql
+CREATE TABLE students (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(255) UNIQUE
+);
+```
+
+### notifications
+
+```sql
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    student_id INTEGER REFERENCES students(id),
+    title VARCHAR(255),
+    message TEXT,
+    notification_type VARCHAR(20),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+---
+
+## Recommended Indexes
+
+```sql
+CREATE INDEX idx_notifications_student
+ON notifications(student_id);
+
+CREATE INDEX idx_notifications_read
+ON notifications(is_read);
+
+CREATE INDEX idx_notifications_created
+ON notifications(created_at DESC);
+```
+
+---
+
+## Potential Scaling Problems
+
+As notification volume grows:
+
+- Query response time increases
+- Full table scans become expensive
+- Storage usage grows rapidly
+- Concurrent user requests increase DB load
+
+---
+
+## Solutions
+
+### Indexing
+
+Use indexes on:
+
+- student_id
+- is_read
+- created_at
+
+### Pagination
+
+Fetch notifications in pages instead of loading all records.
+
+Example:
+
+```sql
+SELECT *
+FROM notifications
+WHERE student_id = 101
+ORDER BY created_at DESC
+LIMIT 20 OFFSET 0;
+```
+
+### Archiving
+
+Move old notifications to archive tables.
+
+### Caching
+
+Use Redis to cache frequently accessed notification data.
+
+---
+
+## Sample Queries
+
+### Get All Notifications
+
+```sql
+SELECT *
+FROM notifications
+WHERE student_id = 101
+ORDER BY created_at DESC;
+```
+
+### Get Unread Notifications
+
+```sql
+SELECT *
+FROM notifications
+WHERE student_id = 101
+AND is_read = FALSE
+ORDER BY created_at DESC;
+```
+
+### Mark Notification As Read
+
+```sql
+UPDATE notifications
+SET is_read = TRUE
+WHERE id = 10;
+```
+
+### Mark All Notifications As Read
+
+```sql
+UPDATE notifications
+SET is_read = TRUE
+WHERE student_id = 101;
+```
