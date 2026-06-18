@@ -595,3 +595,42 @@ Use:
 - Retry and Dead-Letter Queue mechanisms
 
 This architecture can efficiently handle notifications for 50,000+ students while maintaining high performance and reliability.
+
+
+# Stage 6
+
+## Priority Inbox Design
+
+The Priority Inbox displays the top 10 unread notifications based on:
+
+1. Notification Type Weight
+   - Placement = 3
+   - Result = 2
+   - Event = 1
+
+2. Recency
+   - More recent notifications receive higher priority.
+
+### Priority Calculation
+
+Priority Score = Type Weight + Timestamp Value
+
+Notifications are sorted in descending order of priority.
+
+### Efficient Maintenance
+
+Since notifications continuously arrive, repeatedly sorting all notifications is inefficient.
+
+A Min Heap of size 10 can be maintained:
+
+- Insert new notification into heap.
+- If heap size exceeds 10, remove the lowest priority notification.
+- Heap always contains the top 10 notifications.
+
+### Complexity
+
+- Insert: O(log 10)
+- Remove: O(log 10)
+- Memory: O(10)
+
+This approach scales efficiently for large notification streams.
