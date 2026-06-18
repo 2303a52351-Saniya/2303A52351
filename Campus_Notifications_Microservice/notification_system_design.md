@@ -479,3 +479,119 @@ Use:
 - Proper Database Indexing
 
 Together these provide the best balance between performance, scalability, and user experience.
+
+
+# Stage 5
+
+## Analysis of Current Implementation
+
+Current pseudocode:
+
+```python
+function notify_all(student_ids, message):
+    for student_id in student_ids:
+        send_email(student_id, message)
+        save_to_db(student_id, message)
+        push_to_app(student_id, message)
+```
+
+### Problems
+
+For 50,000 students, this approach is inefficient because:
+
+1. Operations are executed sequentially.
+2. Email API calls are slow and may hit rate limits.
+3. Database inserts occur one at a time.
+4. Notification delivery will take a very long time.
+5. Failure for one student may affect the entire process.
+
+---
+
+## Recommended Architecture
+
+Use an asynchronous event-driven architecture.
+
+### Flow
+
+1. HR clicks "Notify All".
+2. Notification Service creates a notification job.
+3. Job is pushed to a Message Queue (RabbitMQ, Kafka, or AWS SQS).
+4. Multiple worker services process students in parallel.
+5. Workers:
+   - Send emails
+   - Save notifications to database
+   - Push real-time notifications through WebSockets.
+
+### Architecture Diagram
+
+HR Portal
+
+↓
+
+Notification Service
+
+↓
+
+Message Queue
+
+↓
+
+Worker Pool
+
+↓
+
+Email Service + Database + WebSocket Service
+
+---
+
+## Advantages
+
+### Scalability
+
+Workers can be increased horizontally to handle larger loads.
+
+### Reliability
+
+Failed messages can be retried automatically.
+
+### Faster Processing
+
+Thousands of notifications can be processed concurrently.
+
+### Fault Tolerance
+
+Failure of one worker does not stop the entire system.
+
+---
+
+## Database Optimization
+
+Instead of inserting one row at a time:
+
+```sql
+INSERT INTO notifications (...)
+VALUES (...);
+```
+
+Use batch inserts:
+
+```sql
+INSERT INTO notifications (...)
+VALUES (...), (...), (...);
+```
+
+This significantly reduces database overhead.
+
+---
+
+## Recommended Solution
+
+Use:
+
+- Message Queue (Kafka/RabbitMQ/SQS)
+- Worker Pool
+- Batch Database Inserts
+- WebSockets for real-time delivery
+- Retry and Dead-Letter Queue mechanisms
+
+This architecture can efficiently handle notifications for 50,000+ students while maintaining high performance and reliability.
